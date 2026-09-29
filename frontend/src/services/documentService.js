@@ -15,6 +15,16 @@ export async function listDocuments() {
   return payload.documents;
 }
 
+export async function getUploadConfig() {
+  const response = await fetch(`${API_BASE}/upload-config`);
+  if (!response.ok) {
+    await throwResponseError(response, 'Não foi possível carregar os limites de envio.');
+  }
+
+  const payload = await response.json();
+  return payload.maxFileSizeBytes;
+}
+
 export async function uploadDocument(file) {
   const formData = new FormData();
   formData.append('file', file);

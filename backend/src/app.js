@@ -12,9 +12,9 @@
 
 const express = require('express');
 const documentRoutes = require('./routes/document.routes');
+const { host, port } = require('./config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -27,8 +27,8 @@ app.get('/health', (req, res) => {
 app.use(documentRoutes);
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`DMS backend ouvindo na porta ${PORT}`);
+  app.listen(port, host, () => {
+    console.log(`DMS backend ouvindo em ${host}:${port}`);
   });
 }
 

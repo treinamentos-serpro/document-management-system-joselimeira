@@ -3,26 +3,30 @@ import DocumentList from '../components/DocumentList.jsx';
 import UploadComponent from '../components/UploadComponent.jsx';
 import {
   downloadDocument,
+  getUploadConfig,
   listDocuments,
   uploadDocument,
 } from '../services/documentService.js';
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState([]);
+  const [maxFileSizeBytes, setMaxFileSizeBytes] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
   const [error, setError] = useState('');
+  const [listError, setListError] = useState('');
   const [notice, setNotice] = useState('');
   const [filter, setFilter] = useState('');
 
   async function refreshDocuments({ initial = false } = {}) {
     if (initial) setIsLoading(true);
     setError('');
+    setListError('');
     try {
       setDocuments(await listDocuments());
     } catch (requestError) {
-      setError(requestError.message);
+      setListError(requestError.message);
     } finally {
       setIsLoading(false);
     }
@@ -30,16 +34,20 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     refreshDocuments({ initial: true });
+    getUploadConfig()
+      .then(setMaxFileSizeBytes)
+      .catch(() => {});
   }, []);
 
   async function handleUpload(file) {
     setIsUploading(true);
     setError('');
+    setListError('');
     setNotice('');
     try {
       await uploadDocument(file);
-      await refreshDocuments();
       setNotice('Documento enviado.');
+      await refreshDocuments();
     } catch (requestError) {
       setError(requestError.message);
       throw requestError;
@@ -51,6 +59,7 @@ export default function DocumentsPage() {
   async function handleDownload(document) {
     setDownloadingId(document.id);
     setError('');
+    setListError('');
     setNotice('');
     try {
       await downloadDocument(document);
@@ -83,7 +92,9 @@ export default function DocumentsPage() {
             <p className="page-description">
               {isLoading
                 ? 'Carregando arquivo...'
-                : `${documents.length} ${documents.length === 1 ? 'documento' : 'documentos'} no arquivo`}
+                : listError
+                  ? 'Lista indisponível'
+                  : `${documents.length} ${documents.length === 1 ? 'documento' : 'documentos'} no arquivo`}
             </p>
           </div>
           <button
@@ -98,19 +109,30 @@ export default function DocumentsPage() {
           </button>
         </div>
 
-        {error && (
+        {(error || listError) && (
           <div className="notice notice-error" role="alert">
-            <span>{error}</span>
-            <button
-              className="notice-action"
-              type="button"
-              onClick={() => refreshDocuments({ initial: true })}
-            >
-              Tentar novamente
-            </button>
+            <span>{error || listError}</span>
+            {listError ? (
+              <button
+                className="notice-action"
+                type="button"
+                onClick={() => refreshDocuments({ initial: true })}
+              >
+                Tentar novamente
+              </button>
+            ) : (
+              <button
+                className="notice-dismiss"
+                type="button"
+                onClick={() => setError('')}
+                aria-label="Dispensar erro"
+              >
+                ×
+              </button>
+            )}
           </div>
         )}
-        {notice && !error && (
+        {notice && (
           <div className="notice notice-success" role="status">
             <span className="notice-check" aria-hidden="true">✓</span>
             <span>{notice}</span>
@@ -129,12 +151,17 @@ export default function DocumentsPage() {
           <DocumentList
             documents={documents}
             isLoading={isLoading}
+            hasLoadError={Boolean(listError)}
             onDownload={handleDownload}
             downloadingId={downloadingId}
             filter={filter}
             onFilterChange={setFilter}
           />
-          <UploadComponent onUpload={handleUpload} isUploading={isUploading} />
+          <UploadComponent
+            onUpload={handleUpload}
+            isUploading={isUploading}
+            maxFileSizeBytes={maxFileSizeBytes}
+          />
         </div>
       </main>
       <footer className="app-footer">

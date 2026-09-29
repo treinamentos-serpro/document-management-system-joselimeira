@@ -1,9 +1,15 @@
 const documentService = require('../services/document.service');
+const { maxFileSizeBytes } = require('../config');
 
 function sendError(res, error, fallback) {
-  const status = error.statusCode || fallback.statusCode;
-  const code = error.code || fallback.code;
-  const message = error.statusCode ? error.message : fallback.message;
+  const isEmptyFile = error.code === 'EMPTY_FILE';
+  const status = isEmptyFile ? 400 : error.statusCode || fallback.statusCode;
+  const code = isEmptyFile ? 'FILE_REQUIRED' : error.code || fallback.code;
+  const message = isEmptyFile
+    ? 'Envie um arquivo no campo file.'
+    : error.statusCode
+      ? error.message
+      : fallback.message;
 
   res.status(status).json({ error: { code, message } });
 }
@@ -20,6 +26,10 @@ function upload(req, res) {
 
 function list(req, res) {
   res.json({ documents: documentService.listDocuments() });
+}
+
+function uploadConfig(req, res) {
+  res.json({ maxFileSizeBytes });
 }
 
 function download(req, res) {
@@ -58,4 +68,4 @@ function download(req, res) {
   });
 }
 
-module.exports = { upload, list, download };
+module.exports = { upload, list, download, uploadConfig };

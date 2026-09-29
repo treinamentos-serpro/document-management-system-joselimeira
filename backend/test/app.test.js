@@ -36,6 +36,12 @@ test('GET /health continua disponível', async () => {
   assert.deepEqual(await response.json(), { status: 'ok' });
 });
 
+test('GET /upload-config informa o limite efetivo do servidor', async () => {
+  const response = await fetch(`${baseUrl}/upload-config`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { maxFileSizeBytes: 1024 });
+});
+
 test('POST /upload exige um arquivo no campo file', async () => {
   const response = await fetch(`${baseUrl}/upload`, { method: 'POST' });
   assert.equal(response.status, 400);
@@ -64,6 +70,17 @@ test('POST /upload rejeita arquivos acima do limite', async () => {
   const response = await fetch(`${baseUrl}/upload`, { method: 'POST', body: form });
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error.code, 'FILE_TOO_LARGE');
+});
+
+test('POST /upload rejeita campos multipart extras', async () => {
+  const form = new FormData();
+  form.append('file', new Blob(['document body']), 'hello.txt');
+  form.append('extra', 'unexpected');
+
+  const response = await fetch(`${baseUrl}/upload`, { method: 'POST', body: form });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.code, 'INVALID_MULTIPART');
+  assert.deepEqual(fs.readdirSync(storageDirectory), []);
 });
 
 test('upload, listagem e download usam storage local e metadados públicos', async () => {

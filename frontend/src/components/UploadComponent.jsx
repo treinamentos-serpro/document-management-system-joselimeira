@@ -1,14 +1,7 @@
 import { useRef, useState } from 'react';
+import formatFileSize from '../utils/formatFileSize.js';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-function formatFileSize(size) {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-export default function UploadComponent({ onUpload, isUploading }) {
+export default function UploadComponent({ onUpload, isUploading, maxFileSizeBytes }) {
   const inputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -16,9 +9,9 @@ export default function UploadComponent({ onUpload, isUploading }) {
 
   function chooseFile(file) {
     setValidationError('');
-    if (file && file.size > MAX_FILE_SIZE) {
+    if (file && maxFileSizeBytes && file.size > maxFileSizeBytes) {
       setSelectedFile(null);
-      setValidationError('O arquivo excede o limite de 10 MiB.');
+      setValidationError(`O arquivo excede o limite de ${formatFileSize(maxFileSizeBytes)}.`);
       return;
     }
     setSelectedFile(file || null);
@@ -98,7 +91,9 @@ export default function UploadComponent({ onUpload, isUploading }) {
         )}
 
         {validationError && <p className="inline-error" role="alert">{validationError}</p>}
-        <p className="upload-limit">Tamanho máximo: 10 MiB</p>
+        <p className="upload-limit">
+          Tamanho máximo: {maxFileSizeBytes ? formatFileSize(maxFileSizeBytes) : 'definido pelo servidor'}
+        </p>
         <button className="primary-button upload-submit" type="submit" disabled={!selectedFile || isUploading}>
           {isUploading ? (
             <><span className="button-spinner" aria-hidden="true" /> Enviando...</>

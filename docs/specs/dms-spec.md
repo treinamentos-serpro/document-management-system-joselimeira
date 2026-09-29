@@ -101,7 +101,20 @@ Envia um documento.
 - `Content-Type`: `multipart/form-data`
 - Campo obrigatório: `file` (um arquivo).
 - Limite padrão: 10 MiB; configurável por `MAX_FILE_SIZE_BYTES`.
+- A requisição aceita somente a parte `file`; campos multipart adicionais são rejeitados.
 - Não há lista de extensões ou MIME types permitidos nesta versão.
+
+### `GET /upload-config`
+
+Informa o limite de upload efetivo para que o frontend valide a seleção antes do envio.
+
+Sucesso: `200 OK`, `Content-Type: application/json`.
+
+```json
+{
+  "maxFileSizeBytes": 10485760
+}
+```
 
 Sucesso: `201 Created`, `Content-Type: application/json`.
 
@@ -170,6 +183,7 @@ Erros:
 ### Backend
 
 - `routes/`: registra métodos e caminhos HTTP e delega aos controllers.
+- `middleware/`: configura o recebimento multipart e aplica limites na entrada HTTP.
 - `controllers/`: interpreta a requisição, valida entrada básica, chama services e traduz resultado/erros para status e respostas HTTP.
 - `services/`: aplica regras do domínio, como atribuição do owner lógico e coordenação entre arquivo e metadados.
 - `repositories/`: persiste arquivos no filesystem local via `multer` com `diskStorage` e mantém metadados em memória.
@@ -188,6 +202,7 @@ Erros:
 | Variável | Padrão | Uso |
 | --- | --- | --- |
 | `PORT` | `3000` | Porta HTTP do backend. |
+| `HOST` | `127.0.0.1` | Interface de rede do backend. Altere somente quando houver necessidade de acesso remoto e controles de segurança apropriados. |
 | `STORAGE_DIR` | `backend/storage` | Diretório local dos arquivos enviados. Caminhos relativos são resolvidos de forma consistente pelo backend. |
 | `MAX_FILE_SIZE_BYTES` | `10485760` | Tamanho máximo de cada arquivo (10 MiB). |
 | `DEFAULT_OWNER` | `local-user` | Identificador demonstrativo associado aos documentos. |
